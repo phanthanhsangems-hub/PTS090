@@ -8,12 +8,15 @@ import {
   FlatList,
   ActivityIndicator,
   Platform,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { fetch } from "expo/fetch";
 import { getApiUrl, apiRequest } from "@/lib/query-client";
+import { useAuth } from "@/context/AuthContext";
+import { LoginScreen } from "@/components/LoginScreen";
 
 interface ChatMessage {
   id: string;
@@ -23,6 +26,7 @@ interface ChatMessage {
 
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -31,8 +35,10 @@ export default function ChatScreen() {
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    createConversation();
-  }, []);
+    if (isAuthenticated) {
+      createConversation();
+    }
+  }, [isAuthenticated]);
 
   async function createConversation() {
     try {
@@ -67,17 +73,16 @@ export default function ChatScreen() {
 
     try {
       const baseUrl = getApiUrl();
-      const response = await fetch(
-        `${baseUrl}api/conversations/${conversationId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-          },
-          body: JSON.stringify({ content: text }),
+      const url = new URL(`/api/conversations/${conversationId}/messages`, baseUrl).toString();
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
         },
-      );
+        credentials: "include",
+        body: JSON.stringify({ content: text }),
+      });
 
       if (!response.ok) throw new Error("Failed to get response");
 
@@ -227,6 +232,18 @@ export default function ChatScreen() {
     [],
   );
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
 
@@ -246,13 +263,27 @@ export default function ChatScreen() {
           <Ionicons name="sparkles" size={22} color="#6366f1" />
           <Text style={styles.headerTitle}>AI Assistant</Text>
         </View>
-        <Pressable
-          onPress={handleNewChat}
-          style={styles.newChatButton}
-          testID="new-chat-button"
-        >
-          <Ionicons name="create-outline" size={22} color="#6366f1" />
-        </Pressable>
+        <View style={styles.headerRight}>
+          <Pressable
+            onPress={handleNewChat}
+            style={styles.newChatButton}
+            testID="new-chat-button"
+          >
+            <Ionicons name="create-outline" size={22} color="#6366f1" />
+          </Pressable>
+          {user?.profileImage ? (
+            <Image
+              source={{ uri: user.profileImage }}
+              style={styles.userAvatar}
+            />
+          ) : (
+            <View style={styles.userAvatarFallback}>
+              <Text style={styles.userAvatarInitial}>
+                {user?.name?.charAt(0).toUpperCase() ?? "?"}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
 
       <FlatList
@@ -328,6 +359,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f8f8",
   },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -343,6 +380,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   headerTitle: {
     fontSize: 18,
     fontFamily: "Inter_600SemiBold",
@@ -351,6 +393,24 @@ const styles = StyleSheet.create({
   newChatButton: {
     padding: 8,
     borderRadius: 8,
+  },
+  userAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  userAvatarFallback: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#6366f1",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userAvatarInitial: {
+    color: "#fff",
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
   },
   messageList: {
     paddingHorizontal: 16,
