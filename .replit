@@ -11,7 +11,6 @@ run = ["npm", "run", "server:prod"]
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
 
 [[ports]]
 localPort = 8081
@@ -19,6 +18,10 @@ localPort = 8081
 [[ports]]
 localPort = 8082
 externalPort = 3000
+
+[[ports]]
+localPort = 8083
+externalPort = 80
 
 [env]
 PORT = "5000"
