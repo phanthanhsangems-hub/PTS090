@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { chatStorage } from "./storage";
+import { requireAuth } from "../../auth";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -8,7 +9,8 @@ const openai = new OpenAI({
 });
 
 export function registerChatRoutes(app: Express): void {
-  // Get all conversations
+  app.use("/api/conversations", requireAuth);
+
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
       const conversations = await chatStorage.getAllConversations();
