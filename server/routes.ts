@@ -1,11 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "node:http";
+import { registerChatRoutes } from "./replit_integrations/chat/routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  registerChatRoutes(app);
 
   const httpServer = createServer(app);
-
   return httpServer;
 }
