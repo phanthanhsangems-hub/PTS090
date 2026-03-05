@@ -101,7 +101,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo 'Managed by Start application' && sleep infinity"
+args = "true"
 
 [workflows.workflow.metadata]
 outputType = "console"
@@ -112,7 +112,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo 'Managed by Start application' && sleep infinity"
+args = "true"
 
 [workflows.workflow.metadata]
 outputType = "console"
