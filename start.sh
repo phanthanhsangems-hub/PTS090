@@ -1,2 +1,2 @@
 #!/bin/bash
-NODE_ENV=development exec npx tsx server/index.ts
+exec node launcher.js
