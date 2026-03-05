@@ -62,6 +62,14 @@ args = "Start App"
 task = "workflow.run"
 args = "Start application"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start Backend"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start Frontend"
+
 [[workflows.workflow]]
 name = "Start App"
 author = "agent"
@@ -86,3 +94,25 @@ args = "bash start.sh"
 [workflows.workflow.metadata]
 outputType = "webview"
 isCanvasWorkflow = true
+
+[[workflows.workflow]]
+name = "Start Backend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo 'Backend is handled by Start application workflow'"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Start Frontend"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo 'Frontend is handled by Start application workflow'"
+
+[workflows.workflow.metadata]
+outputType = "console"
