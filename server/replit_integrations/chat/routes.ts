@@ -1,19 +1,27 @@
 import type { Express, Request, Response } from "express";
 import OpenAI from "openai";
 import { chatStorage } from "./storage";
-import { requireAuth } from "../../auth";
+import { requireAuth, getReplitUser } from "../../auth";
 
-const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-});
+let openaiClient: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+    });
+  }
+  return openaiClient;
+}
 
 export function registerChatRoutes(app: Express): void {
   app.use("/api/conversations", requireAuth);
 
   app.get("/api/conversations", async (req: Request, res: Response) => {
     try {
-      const conversations = await chatStorage.getAllConversations();
+      const user = getReplitUser(req)!;
+      const conversations = await chatStorage.getAllConversations(user.id);
       res.json(conversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -24,8 +32,9 @@ export function registerChatRoutes(app: Express): void {
   // Get single conversation with messages
   app.get("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
+      const user = getReplitUser(req)!;
       const id = parseInt(req.params.id);
-      const conversation = await chatStorage.getConversation(id);
+      const conversation = await chatStorage.getConversation(id, user.id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
@@ -40,8 +49,9 @@ export function registerChatRoutes(app: Express): void {
   // Create new conversation
   app.post("/api/conversations", async (req: Request, res: Response) => {
     try {
+      const user = getReplitUser(req)!;
       const { title } = req.body;
-      const conversation = await chatStorage.createConversation(title || "New Chat");
+      const conversation = await chatStorage.createConversation(title || "New Chat", user.id);
       res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -52,8 +62,9 @@ export function registerChatRoutes(app: Express): void {
   // Delete conversation
   app.delete("/api/conversations/:id", async (req: Request, res: Response) => {
     try {
+      const user = getReplitUser(req)!;
       const id = parseInt(req.params.id);
-      await chatStorage.deleteConversation(id);
+      await chatStorage.deleteConversation(id, user.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting conversation:", error);
@@ -64,8 +75,15 @@ export function registerChatRoutes(app: Express): void {
   // Send message and get AI response (streaming)
   app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
+      const user = getReplitUser(req)!;
       const conversationId = parseInt(req.params.id);
       const { content } = req.body;
+
+      // Verify the user owns this conversation
+      const conversation = await chatStorage.getConversation(conversationId, user.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
 
       // Save user message
       await chatStorage.createMessage(conversationId, "user", content);
@@ -85,7 +103,7 @@ export function registerChatRoutes(app: Express): void {
       res.flushHeaders();
 
       // Stream response from OpenAI
-      const stream = await openai.chat.completions.create({
+      const stream = await getOpenAI().chat.completions.create({
         model: "gpt-5.1",
         messages: chatMessages,
         stream: true,
