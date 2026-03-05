@@ -101,7 +101,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo 'Backend is handled by Start application workflow'"
+args = "sleep infinity"
 
 [workflows.workflow.metadata]
 outputType = "console"
@@ -112,7 +112,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo 'Frontend is handled by Start application workflow'"
+args = "sleep infinity"
 
 [workflows.workflow.metadata]
 outputType = "console"
