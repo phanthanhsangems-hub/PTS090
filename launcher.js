@@ -1,18 +1,9 @@
 const net = require("net");
 const http = require("http");
-const { spawn, execSync } = require("child_process");
 
 const EXTERNAL_PORT = 8083;
 const BACKEND_PORT = 5001;
-let child = null;
 let serverReady = false;
-
-try {
-  execSync(`kill $(lsof -t -i :${EXTERNAL_PORT}) 2>/dev/null || true`, { stdio: "ignore" });
-} catch {}
-try {
-  execSync(`kill $(lsof -t -i :${BACKEND_PORT}) 2>/dev/null || true`, { stdio: "ignore" });
-} catch {}
 
 const proxy = http.createServer((req, res) => {
   if (serverReady) {
@@ -40,24 +31,17 @@ const proxy = http.createServer((req, res) => {
 
 function startProxy() {
   proxy.listen(EXTERNAL_PORT, "0.0.0.0", () => {
-    console.log("Proxy ready on port " + EXTERNAL_PORT);
-
-    child = spawn("npx", ["tsx", "server/index.ts"], {
-      stdio: "inherit",
-      env: { ...process.env, NODE_ENV: "development", PORT: String(BACKEND_PORT) },
-    });
+    console.log("Proxy ready on port " + EXTERNAL_PORT + " → backend on port " + BACKEND_PORT);
 
     const check = () => {
       const sock = net.createConnection({ port: BACKEND_PORT, host: "127.0.0.1" }, () => {
         sock.destroy();
         serverReady = true;
-        console.log("Backend ready on port " + BACKEND_PORT + ", proxying through port " + EXTERNAL_PORT);
+        console.log("Backend is ready — app is live");
       });
       sock.on("error", () => setTimeout(check, 500));
     };
-    setTimeout(check, 1000);
-
-    child.on("exit", (code) => process.exit(code || 0));
+    check();
   });
 
   proxy.on("error", (e) => {
@@ -74,11 +58,6 @@ function startProxy() {
 startProxy();
 
 process.on("SIGTERM", () => {
-  if (child) child.kill("SIGTERM");
   proxy.close();
-  setTimeout(() => process.exit(0), 3000);
-});
-process.on("SIGINT", () => {
-  if (child) child.kill("SIGINT");
-  process.exit(0);
+  setTimeout(() => process.exit(0), 1000);
 });

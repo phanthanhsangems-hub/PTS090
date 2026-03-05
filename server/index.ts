@@ -14,6 +14,19 @@ server.listen({ port, host: "0.0.0.0" }, () => {
   log(`express server serving on port ${port}`);
 });
 
+const EXTERNAL_PORT = 8083;
+if (port !== EXTERNAL_PORT) {
+  const externalServer = http.createServer(app);
+  externalServer.listen({ port: EXTERNAL_PORT, host: "0.0.0.0" }, () => {
+    log(`also listening on port ${EXTERNAL_PORT} (external access)`);
+  });
+  externalServer.on("error", (e: NodeJS.ErrnoException) => {
+    if (e.code === "EADDRINUSE") {
+      log(`port ${EXTERNAL_PORT} already in use, skipping`);
+    }
+  });
+}
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
