@@ -68,20 +68,22 @@ var pool = new pg.Pool({
 var db = drizzle(pool, { schema: schema_exports });
 
 // server/replit_integrations/chat/storage.ts
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 var chatStorage = {
-  async getConversation(id) {
-    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+  async getConversation(id, userId) {
+    const [conversation] = await db.select().from(conversations).where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
     return conversation;
   },
-  async getAllConversations() {
-    return db.select().from(conversations).orderBy(desc(conversations.createdAt));
+  async getAllConversations(userId) {
+    return db.select().from(conversations).where(eq(conversations.userId, userId)).orderBy(desc(conversations.createdAt));
   },
-  async createConversation(title) {
-    const [conversation] = await db.insert(conversations).values({ title }).returning();
+  async createConversation(title, userId) {
+    const [conversation] = await db.insert(conversations).values({ title, userId }).returning();
     return conversation;
   },
-  async deleteConversation(id) {
+  async deleteConversation(id, userId) {
+    const [conversation] = await db.select().from(conversations).where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
+    if (!conversation) return;
     await db.delete(messages).where(eq(messages.conversationId, id));
     await db.delete(conversations).where(eq(conversations.id, id));
   },
@@ -128,15 +130,22 @@ function registerAuthRoutes(app2) {
 }
 
 // server/replit_integrations/chat/routes.ts
-var openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
-});
+var openaiClient = null;
+function getOpenAI() {
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL
+    });
+  }
+  return openaiClient;
+}
 function registerChatRoutes(app2) {
   app2.use("/api/conversations", requireAuth);
   app2.get("/api/conversations", async (req, res) => {
     try {
-      const conversations2 = await chatStorage.getAllConversations();
+      const user = getReplitUser(req);
+      const conversations2 = await chatStorage.getAllConversations(user.id);
       res.json(conversations2);
     } catch (error) {
       console.error("Error fetching conversations:", error);
@@ -145,8 +154,9 @@ function registerChatRoutes(app2) {
   });
   app2.get("/api/conversations/:id", async (req, res) => {
     try {
+      const user = getReplitUser(req);
       const id = parseInt(req.params.id);
-      const conversation = await chatStorage.getConversation(id);
+      const conversation = await chatStorage.getConversation(id, user.id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
@@ -159,8 +169,9 @@ function registerChatRoutes(app2) {
   });
   app2.post("/api/conversations", async (req, res) => {
     try {
+      const user = getReplitUser(req);
       const { title } = req.body;
-      const conversation = await chatStorage.createConversation(title || "New Chat");
+      const conversation = await chatStorage.createConversation(title || "New Chat", user.id);
       res.status(201).json(conversation);
     } catch (error) {
       console.error("Error creating conversation:", error);
@@ -169,8 +180,9 @@ function registerChatRoutes(app2) {
   });
   app2.delete("/api/conversations/:id", async (req, res) => {
     try {
+      const user = getReplitUser(req);
       const id = parseInt(req.params.id);
-      await chatStorage.deleteConversation(id);
+      await chatStorage.deleteConversation(id, user.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting conversation:", error);
@@ -179,8 +191,13 @@ function registerChatRoutes(app2) {
   });
   app2.post("/api/conversations/:id/messages", async (req, res) => {
     try {
+      const user = getReplitUser(req);
       const conversationId = parseInt(req.params.id);
       const { content } = req.body;
+      const conversation = await chatStorage.getConversation(conversationId, user.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
       await chatStorage.createMessage(conversationId, "user", content);
       const messages2 = await chatStorage.getMessagesByConversation(conversationId);
       const chatMessages = messages2.map((m) => ({
@@ -192,7 +209,7 @@ function registerChatRoutes(app2) {
       res.setHeader("X-Accel-Buffering", "no");
       res.setHeader("Connection", "keep-alive");
       res.flushHeaders();
-      const stream = await openai.chat.completions.create({
+      const stream = await getOpenAI().chat.completions.create({
         model: "gpt-5.1",
         messages: chatMessages,
         stream: true,
@@ -242,6 +259,18 @@ var server = http.createServer(app);
 server.listen({ port, host: "0.0.0.0" }, () => {
   log(`express server serving on port ${port}`);
 });
+var EXTERNAL_PORT = 8083;
+if (port !== EXTERNAL_PORT) {
+  const externalServer = http.createServer(app);
+  externalServer.listen({ port: EXTERNAL_PORT, host: "0.0.0.0" }, () => {
+    log(`also listening on port ${EXTERNAL_PORT} (external access)`);
+  });
+  externalServer.on("error", (e) => {
+    if (e.code === "EADDRINUSE") {
+      log(`port ${EXTERNAL_PORT} already in use, skipping`);
+    }
+  });
+}
 app.use(
   express.json({
     verify: (req, _res, buf) => {
