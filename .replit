@@ -23,6 +23,10 @@ localPort = 5001
 externalPort = 3003
 
 [[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
 localPort = 8082
 externalPort = 3000
 
@@ -51,15 +55,11 @@ args = "Start App"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Start Backend"
+args = "Start application"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Start Frontend"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
 
 [[workflows.workflow]]
 name = "Start App"
@@ -75,15 +75,17 @@ task = "workflow.run"
 args = "Start Frontend"
 
 [[workflows.workflow]]
-name = "Start Backend"
+name = "Start application"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "true"
+args = "NODE_ENV=development PORT=5000 npx tsx server/index.ts"
+waitForPort = 5000
 
 [workflows.workflow.metadata]
-outputType = "console"
+outputType = "webview"
+isCanvasWorkflow = true
 
 [[workflows.workflow]]
 name = "Start Frontend"
@@ -91,20 +93,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "true"
+args = "npm run expo:dev"
 
 [workflows.workflow.metadata]
 outputType = "console"
-
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
-isCanvasWorkflow = true
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "NODE_ENV=development PORT=5000 npx tsx server/index.ts"
-waitForPort = 5000
