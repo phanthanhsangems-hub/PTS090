@@ -15,12 +15,20 @@ localPort = 3001
 externalPort = 3002
 
 [[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
 localPort = 5001
 externalPort = 3003
 
 [[ports]]
 localPort = 8082
 externalPort = 3000
+
+[[ports]]
+localPort = 8083
+externalPort = 3001
 
 [env]
 PORT = "5000"
@@ -92,11 +100,11 @@ outputType = "console"
 name = "Start application"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "NODE_ENV=development PORT=5000 npx tsx server/index.ts"
-waitForPort = 8083
-
 [workflows.workflow.metadata]
 outputType = "webview"
 isCanvasWorkflow = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=development PORT=5000 npx tsx server/index.ts"
+waitForPort = 5000
