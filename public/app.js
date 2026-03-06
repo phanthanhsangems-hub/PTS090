@@ -127,11 +127,6 @@ function removeTypingIndicator() {
   if (el) el.remove();
 }
 
-function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
 
 async function sendMessage() {
   const text = input.value.trim();
