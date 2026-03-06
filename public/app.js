@@ -31,7 +31,11 @@ async function checkAuth() {
 function renderAvatar() {
   if (!currentUser) return;
   if (currentUser.profileImage) {
-    userAvatar.innerHTML = `<img src="${currentUser.profileImage}" alt="${currentUser.name}" />`;
+    const img = document.createElement('img');
+    img.src = currentUser.profileImage;
+    img.alt = currentUser.name;
+    userAvatar.innerHTML = '';
+    userAvatar.appendChild(img);
   } else {
     userAvatar.textContent = currentUser.name.charAt(0).toUpperCase();
   }
