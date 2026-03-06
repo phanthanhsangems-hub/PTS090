@@ -85,18 +85,18 @@ function addMessage(role, content) {
   const msg = document.createElement("div");
   msg.className = `message ${role}`;
 
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+  bubble.textContent = content;
+
   if (role === "assistant") {
-    msg.innerHTML = `
-      <div class="message-avatar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
-        </svg>
-      </div>
-      <div class="message-bubble">${escapeHtml(content)}</div>
-    `;
-  } else {
-    msg.innerHTML = `<div class="message-bubble">${escapeHtml(content)}</div>`;
+    const avatar = document.createElement("div");
+    avatar.className = "message-avatar";
+    avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>`;
+    msg.appendChild(avatar);
   }
+
+  msg.appendChild(bubble);
 
   messagesEl.appendChild(msg);
   messagesEl.scrollTop = messagesEl.scrollHeight;
