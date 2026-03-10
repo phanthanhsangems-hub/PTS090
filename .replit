@@ -91,9 +91,10 @@ isCanvasWorkflow = true
 name = "Start Frontend"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run expo:dev"
-
-[workflows.workflow.metadata]
-outputType = "console"
+waitForPort = 8081
