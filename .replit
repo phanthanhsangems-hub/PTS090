@@ -98,3 +98,6 @@ outputType = "webview"
 task = "shell.exec"
 args = "npm run expo:dev"
 waitForPort = 8081
+
+[objectStorage]
+defaultBucketID = "replit-objstore-d5faf8ef-4194-43d6-a5bd-32fcdfdad7f8"
