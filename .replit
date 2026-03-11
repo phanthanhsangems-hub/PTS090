@@ -104,4 +104,6 @@ defaultBucketID = "replit-objstore-d5faf8ef-4194-43d6-a5bd-32fcdfdad7f8"
 [userenv]
 
 [userenv.production]
-PORT = "8082"
+
+[userenv.shared]
+PORT = "5000"
