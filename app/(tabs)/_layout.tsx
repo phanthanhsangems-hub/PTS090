@@ -1,3 +1,4 @@
+// template
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
 import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
@@ -8,12 +9,13 @@ import React from "react";
 
 import Colors from "@/constants/colors";
 
+//IMPORTANT: iOS 26 Exists, feel free to use NativeTabs for native tabs with liquid glass support.
 function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "bubble.left.and.text.bubble.right", selected: "bubble.left.and.text.bubble.right.fill" }} />
-        <Label>Chat</Label>
+        <Icon sf={{ default: "house", selected: "house.fill" }} />
+        <Label>Home</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -26,18 +28,35 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#6366f1",
+        tabBarActiveTintColor: Colors.light.tint,
         tabBarInactiveTintColor: Colors.light.tabIconDefault,
-        headerShown: false,
+        headerShown: true,
         tabBarStyle: {
-          display: "none",
+          position: "absolute",
+          backgroundColor: Platform.select({
+            ios: "transparent",
+            android: isDark ? "#000" : "#fff",
+          }),
+          borderTopWidth: 0,
+          elevation: 0,
         },
+        tabBarBackground: () =>
+          Platform.OS === "ios" ? (
+            <BlurView
+              intensity={100}
+              tint={isDark ? "dark" : "light"}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Chat",
+          title: "Home",
+          tabBarIcon: ({ color }) => (
+            <SymbolView name="house" tintColor={color} size={24} />
+          ),
         }}
       />
     </Tabs>

@@ -1,26 +1,16 @@
 entrypoint = "README.md"
-modules = ["nodejs-22", "python-3.11", "node"]
+modules = ["nodejs-22"]
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "cloudrun"
 build = ["sh", "-c", "npm run expo:static:build && npm run server:build"]
 run = ["npm", "run", "server:prod"]
-publicDir = "public"
-
-[[ports]]
-localPort = 3001
-externalPort = 3002
 
 [[ports]]
 localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 3003
 
 [[ports]]
 localPort = 8081
@@ -31,14 +21,13 @@ externalPort = 3000
 
 [[ports]]
 localPort = 8083
-externalPort = 3001
+externalPort = 80
 
 [env]
 PORT = "5000"
 
 [agent]
 stack = "EXPO"
-integrations = ["javascript_openai_ai_integrations:2.0.0"]
 
 [workflows]
 runButton = "Project"
@@ -54,16 +43,12 @@ args = "Start App"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Start application"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "Start Frontend"
 
 [[workflows.workflow]]
 name = "Start App"
-mode = "parallel"
 author = "agent"
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
@@ -74,36 +59,23 @@ task = "workflow.run"
 args = "Start Frontend"
 
 [[workflows.workflow]]
-name = "Start application"
+name = "Start Backend"
 author = "agent"
+mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "NODE_ENV=development PORT=5000 npx tsx server/index.ts"
+args = "npm run server:dev"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
-isCanvasWorkflow = true
 
 [[workflows.workflow]]
 name = "Start Frontend"
 author = "agent"
+mode = "sequential"
 
 [workflows.workflow.metadata]
-outputType = "webview"
+outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run expo:dev"
-waitForPort = 8081
-
-[objectStorage]
-defaultBucketID = "replit-objstore-d5faf8ef-4194-43d6-a5bd-32fcdfdad7f8"
-
-[userenv]
-
-[userenv.production]
-
-[userenv.shared]
-PORT = "5000"
+args = "EXPO_PACKAGER_PROXY_URL=https://$REPLIT_DEV_DOMAIN REACT_NATIVE_PACKAGER_HOSTNAME=$REPLIT_DEV_DOMAIN EXPO_PUBLIC_DOMAIN=$REPLIT_DEV_DOMAIN:5000 node_modules/.bin/expo start --localhost"
