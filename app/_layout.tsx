@@ -14,7 +14,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
-import { AuthProvider } from "@/context/AuthContext";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -46,13 +45,11 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </AuthProvider>
+        <GestureHandlerRootView>
+          <KeyboardProvider>
+            <RootLayoutNav />
+          </KeyboardProvider>
+        </GestureHandlerRootView>
       </QueryClientProvider>
     </ErrorBoundary>
   );
