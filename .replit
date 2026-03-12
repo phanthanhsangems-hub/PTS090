@@ -116,3 +116,6 @@ args = "echo 'Managed by Start application' && sleep infinity"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-5674fef2-9506-4e9a-9361-e00061ea37cf"
